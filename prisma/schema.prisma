@@ -1,0 +1,220 @@
+// OpenRun - Pickup Sports Map
+// Neon Postgres with PostGIS
+// DATABASE_URL = pooled (runtime), DIRECT_DATABASE_URL = direct (migrations)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+enum Sport {
+  BASKETBALL
+  SOCCER
+  TENNIS
+  VOLLEYBALL
+  PICKLEBALL
+  ULTIMATE
+  FLAG_FOOTBALL
+  OTHER
+}
+
+enum SkillLevel {
+  CASUAL
+  MEDIUM
+  COMPETITIVE
+}
+
+enum Visibility {
+  PUBLIC
+  FRIENDS
+  INVITE_ONLY
+}
+
+enum PostStatus {
+  OPEN
+  FULL
+  CANCELLED
+  EXPIRED
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NotificationType {
+  FRIEND_REQUEST
+  TAGGED_IN_POST
+  JOINED_YOUR_POST
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  profileImage  String?
+  bio           String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  createdLocations Location[]         @relation("LocationCreator")
+  createdPosts     Post[]             @relation("PostCreator")
+  postParticipants PostParticipant[]
+  friendRequestsSent   FriendRequest[] @relation("FriendRequestFrom")
+  friendRequestsReceived FriendRequest[] @relation("FriendRequestTo")
+  favoriteLocations FavoriteLocation[]
+  notifications     Notification[]
+  postTags          PostTag[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model Location {
+  id         String   @id @default(cuid())
+  label      String
+  lat        Float
+  lng        Float
+  createdAt  DateTime @default(now())
+  createdById String?
+
+  createdBy User?  @relation("LocationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  posts     Post[]
+  favorites FavoriteLocation[]
+
+  @@unique([label, lat, lng])
+  @@index([createdById])
+}
+
+model Post {
+  id              String       @id @default(cuid())
+  creatorId       String
+  locationId      String
+  sport           Sport
+  title           String
+  description     String?
+  skillLevel      SkillLevel
+  visibility      Visibility
+  startTime       DateTime
+  durationMinutes Int          @default(90)
+  totalPlayers    Int          @default(6)
+  status          PostStatus   @default(OPEN)
+  expiresAt       DateTime
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  creator    User              @relation("PostCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  location   Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  participants PostParticipant[]
+  tags       PostTag[]
+
+  @@index([creatorId])
+  @@index([locationId])
+  @@index([status])
+  @@index([startTime])
+  @@index([expiresAt])
+}
+
+model PostParticipant {
+  postId   String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+}
+
+model PostTag {
+  postId String
+  userId String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model FriendRequest {
+  id         String              @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  status     FriendRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+
+  fromUser User @relation("FriendRequestFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("FriendRequestTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+model FavoriteLocation {
+  userId     String
+  locationId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, locationId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  data      Json
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([readAt])
+}
