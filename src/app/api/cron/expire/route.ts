@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 function getCronSecret(request: NextRequest): string | null {
   const header = request.headers.get("x-cron-secret");
   if (header) return header;
