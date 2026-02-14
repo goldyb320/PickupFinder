@@ -127,7 +127,7 @@ export function MapView({
         const cluster = item as Cluster;
         const el = document.createElement("div");
         el.className =
-          "flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground font-bold shadow-lg";
+          "flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary text-white font-bold shadow-lg";
         el.textContent = cluster.posts.length.toString();
         el.setAttribute("role", "button");
         el.setAttribute("aria-label", `${cluster.posts.length} games at this location`);
@@ -141,7 +141,7 @@ export function MapView({
         const post = item as MapPost;
         const el = document.createElement("div");
         el.className =
-          "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-green-600 text-white font-semibold shadow text-xs";
+          "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary text-white font-semibold shadow text-xs";
         el.textContent = "1";
         el.setAttribute("role", "button");
         el.setAttribute("aria-label", `1 game: ${post.title ?? "Pickup game"}`);

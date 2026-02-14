@@ -14,43 +14,58 @@ export async function GET() {
     take: 50,
   });
 
-  // Backfill requestId and fromUserName for FRIEND_REQUEST notifications
+  // Backfill requestId/fromUserName for FRIEND_REQUEST, joinedUserName for JOINED_YOUR_POST
   const enriched = await Promise.all(
     notifications.map(async (n) => {
-      if (n.type !== "FRIEND_REQUEST") return n;
-      const data = n.data as Record<string, unknown>;
-      const fromUserId = data?.fromUserId as string | undefined;
-      if (!fromUserId) return n;
+      if (n.type === "FRIEND_REQUEST") {
+        const data = n.data as Record<string, unknown>;
+        const fromUserId = data?.fromUserId as string | undefined;
+        if (!fromUserId) return n;
 
-      let needsUpdate = false;
-      const updates: Record<string, unknown> = {};
+        let needsUpdate = false;
+        const updates: Record<string, unknown> = {};
 
-      if (!data?.requestId) {
-        const pending = await prisma.friendRequest.findUnique({
-          where: {
-            fromUserId_toUserId: {
-              fromUserId,
-              toUserId: session.user!.id!,
+        if (!data?.requestId) {
+          const pending = await prisma.friendRequest.findUnique({
+            where: {
+              fromUserId_toUserId: {
+                fromUserId,
+                toUserId: session.user!.id!,
+              },
             },
-          },
-        });
-        if (pending && pending.status === "PENDING") {
-          updates.requestId = pending.id;
+          });
+          if (pending && pending.status === "PENDING") {
+            updates.requestId = pending.id;
+            needsUpdate = true;
+          }
+        }
+
+        if (!data?.fromUserName) {
+          const fromUser = await prisma.user.findUnique({
+            where: { id: fromUserId },
+            select: { name: true, email: true },
+          });
+          updates.fromUserName = fromUser?.name ?? fromUser?.email?.split("@")[0] ?? "Someone";
           needsUpdate = true;
         }
+
+        if (!needsUpdate) return n;
+        return { ...n, data: { ...data, ...updates } };
       }
 
-      if (!data?.fromUserName) {
-        const fromUser = await prisma.user.findUnique({
-          where: { id: fromUserId },
+      if (n.type === "JOINED_YOUR_POST") {
+        const data = n.data as Record<string, unknown>;
+        const joinedUserId = data?.joinedUserId as string | undefined;
+        if (!joinedUserId || data?.joinedUserName) return n;
+        const user = await prisma.user.findUnique({
+          where: { id: joinedUserId },
           select: { name: true, email: true },
         });
-        updates.fromUserName = fromUser?.name ?? fromUser?.email?.split("@")[0] ?? "Someone";
-        needsUpdate = true;
+        const joinedUserName = user?.name ?? user?.email?.split("@")[0] ?? "Someone";
+        return { ...n, data: { ...data, joinedUserName } };
       }
 
-      if (!needsUpdate) return n;
-      return { ...n, data: { ...data, ...updates } };
+      return n;
     })
   );
 

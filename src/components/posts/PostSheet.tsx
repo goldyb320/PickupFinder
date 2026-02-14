@@ -8,7 +8,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -22,6 +21,8 @@ interface PostSheetProps {
   onOpenChange: (open: boolean) => void;
   posts: MapPost[];
   onPostSelect?: (post: MapPost) => void;
+  /** When true, renders as inline panel (page scrolls). When false, renders as overlay sheet. */
+  inline?: boolean;
 }
 
 export function PostSheet({
@@ -29,6 +30,7 @@ export function PostSheet({
   onOpenChange,
   posts,
   onPostSelect,
+  inline = false,
 }: PostSheetProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -89,16 +91,17 @@ export function PostSheet({
     }
   };
 
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[60vh] px-6 sm:px-8 pb-8">
-        <SheetHeader>
-          <SheetTitle>
-            {posts.length} game{posts.length !== 1 ? "s" : ""} nearby
-          </SheetTitle>
-        </SheetHeader>
-        <ScrollArea className="mt-4 h-[calc(60vh-80px)]">
-          <div className="space-y-3 pr-4">
+  const content = (
+    <>
+      <div className="flex items-center justify-between border-t bg-background px-6 sm:px-8 pb-6 pt-4">
+        <h2 className="text-lg font-semibold">
+          {posts.length} game{posts.length !== 1 ? "s" : ""} nearby
+        </h2>
+        <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+          Close
+        </Button>
+      </div>
+      <div className="space-y-3 px-6 sm:px-8 pb-8">
             {sorted.map((post) => (
               <div
                 key={post.id}
@@ -172,8 +175,100 @@ export function PostSheet({
                 </div>
               </div>
             ))}
-          </div>
-        </ScrollArea>
+      </div>
+    </>
+  );
+
+  if (inline) {
+    return <div className="flex flex-col">{content}</div>;
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="bottom"
+        className="min-h-[70vh] max-h-[90vh] overflow-y-auto px-6 sm:px-8 pb-8"
+      >
+        <SheetHeader>
+          <SheetTitle>
+            {posts.length} game{posts.length !== 1 ? "s" : ""} nearby
+          </SheetTitle>
+        </SheetHeader>
+        <div className="mt-4 space-y-3 pr-4">
+          {sorted.map((post) => (
+            <div
+              key={post.id}
+              className="flex flex-col gap-2 rounded-lg border p-4 hover:bg-muted/50"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold">{post.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {post.locationLabel}
+                  </p>
+                </div>
+                <Badge variant="secondary">{post.sport}</Badge>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span>
+                  {format(new Date(post.startTime), "EEE, MMM d 'at' h:mm a")}
+                </span>
+                <span className="text-muted-foreground">
+                  {post.joinedCount ?? 0}/{post.totalPlayers} players
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {joinedIds.has(post.id) ? (
+                  <>
+                    <Button size="sm" variant="secondary" disabled>
+                      <Check className="mr-1.5 h-3.5 w-3.5" />
+                      Joined
+                    </Button>
+                    {session?.user?.id !== (post.creatorId as string | undefined) && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLeave(post);
+                        }}
+                        disabled={leavingId === post.id}
+                        aria-label={`Leave ${post.title}`}
+                      >
+                        <UserMinus className="mr-1.5 h-3.5 w-3.5" />
+                        Leave
+                      </Button>
+                    )}
+                  </>
+                ) : (post.joinedCount ?? 0) < post.totalPlayers &&
+                  post.status !== "FULL" ? (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleJoin(post);
+                    }}
+                    disabled={joiningId === post.id}
+                    aria-label={`Join ${post.title}`}
+                  >
+                    <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                    Join
+                  </Button>
+                ) : null}
+                {onPostSelect && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onPostSelect(post)}
+                    aria-label={`View details for ${post.title}`}
+                  >
+                    View details
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </SheetContent>
     </Sheet>
   );

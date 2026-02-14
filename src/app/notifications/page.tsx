@@ -37,17 +37,10 @@ export default function NotificationsPage() {
   }, [status, router]);
 
   const handleMarkRead = async (id: string) => {
-    const notif = notifications.find((x) => x.id === id);
     const res = await fetch(`/api/notifications/${id}/read`, { method: "POST" });
     if (res.ok) {
       setNotifications((n) => n.filter((x) => x.id !== id));
       window.dispatchEvent(new CustomEvent("notification-removed"));
-    }
-    if (notif?.type === "TAGGED_IN_POST" && notif.data?.postId) {
-      router.push(`/posts/${notif.data.postId}`);
-    }
-    if (notif?.type === "JOINED_YOUR_POST" && notif.data?.postId) {
-      router.push(`/posts/${notif.data.postId}`);
     }
   };
 
@@ -94,7 +87,7 @@ export default function NotificationsPage() {
       case "TAGGED_IN_POST":
         return `You were tagged in "${n.data?.postTitle ?? "a post"}"`;
       case "JOINED_YOUR_POST":
-        return `Someone joined your game "${n.data?.postTitle ?? ""}"`;
+        return `${(n.data?.joinedUserName as string) || "Someone"} joined your game "${n.data?.postTitle ?? ""}"`;
       default:
         return "New notification";
     }

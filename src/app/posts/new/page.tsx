@@ -298,7 +298,7 @@ function NewPostContent() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col lg:flex-row lg:overflow-hidden">
+    <div className="flex min-h-screen flex-col overflow-y-auto lg:h-[calc(100vh-3.5rem)] lg:flex-row lg:overflow-hidden">
       <div className="flex flex-1 flex-col border-b lg:border-b-0 lg:border-r lg:min-w-0">
         <div className="flex-none border-b p-4">
           <h1 className="text-xl font-bold">Create Game</h1>
@@ -345,7 +345,7 @@ function NewPostContent() {
             </div>
           )}
         </div>
-        <div className="relative h-[450px] shrink-0 lg:h-auto lg:min-h-[350px] lg:flex-1">
+        <div className="relative h-[50vh] min-h-[300px] shrink-0 lg:h-auto lg:min-h-[350px] lg:flex-1">
           <div
             ref={mapRef}
             className="h-full w-full rounded-b-lg lg:rounded-none"
@@ -386,7 +386,7 @@ function NewPostContent() {
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col overflow-y-auto lg:w-[420px] lg:flex-none"
+        className="flex flex-col lg:w-[420px] lg:flex-none lg:overflow-y-auto"
       >
         <div className="flex-none border-b p-4">
           <h2 className="font-semibold">2. Game details</h2>

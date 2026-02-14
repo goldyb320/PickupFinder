@@ -92,6 +92,8 @@ export async function POST(
           postId,
           postTitle: post.title,
           joinedUserId: session.user.id,
+          joinedUserName:
+            session.user.name ?? session.user.email?.split("@")[0] ?? "Someone",
         },
       },
     }),

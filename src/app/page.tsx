@@ -49,8 +49,10 @@ export default function HomePage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col">
-      <div className="flex items-center justify-between border-b px-6 sm:px-8 lg:px-12 py-2">
+    <div
+      className={`flex flex-col ${sheetOpen ? "min-h-screen" : "h-[calc(100vh-3.5rem)]"}`}
+    >
+      <div className="flex shrink-0 items-center justify-between border-b px-6 sm:px-8 lg:px-12 py-2">
         <h1 className="text-lg font-semibold">Find pickup games</h1>
         <MapFilters
           sport={filters.sport}
@@ -68,17 +70,36 @@ export default function HomePage() {
         />
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div
+        className={
+          sheetOpen
+            ? "flex-1 overflow-y-auto"
+            : "flex-1 overflow-hidden"
+        }
+      >
         {viewMode === "map" ? (
-          <MapView
-            onClusterClick={handleClusterClick}
-            onPostClick={(p) => {
-              setSheetPosts([p]);
-              setSheetOpen(true);
-            }}
-            onMapClick={handleMapClick}
-            filters={filters}
-          />
+          <>
+            <div className={sheetOpen ? "h-[50vh] shrink-0" : "h-full"}>
+              <MapView
+                onClusterClick={handleClusterClick}
+                onPostClick={(p) => {
+                  setSheetPosts([p]);
+                  setSheetOpen(true);
+                }}
+                onMapClick={handleMapClick}
+                filters={filters}
+              />
+            </div>
+            {sheetOpen && (
+              <PostSheet
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
+                posts={sheetPosts}
+                onPostSelect={handlePostSelect}
+                inline
+              />
+            )}
+          </>
         ) : (
           <ListView
             filters={filters}
@@ -86,13 +107,6 @@ export default function HomePage() {
           />
         )}
       </div>
-
-      <PostSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        posts={sheetPosts}
-        onPostSelect={handlePostSelect}
-      />
       {addGameCoords && (
         <AddGameSheet
           open={addGameSheetOpen}
