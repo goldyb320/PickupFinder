@@ -39,7 +39,7 @@ export function MapView({
   const [posts, setPosts] = useState<MapPost[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(async (signal?: AbortSignal) => {
     const params = new URLSearchParams({
       north: viewport.north.toString(),
       south: viewport.south.toString(),
@@ -52,17 +52,16 @@ export function MapView({
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/posts/viewport?${params}`);
+      const res = await fetch(`/api/posts/viewport?${params}`, { signal });
       const text = await res.text();
       if (!res.ok) {
-        console.error("Viewport API error:", res.status, text);
         setPosts([]);
         return;
       }
       const data = text ? JSON.parse(text) : [];
       setPosts(data);
     } catch (e) {
-      console.error("Failed to fetch posts:", e);
+      if (e instanceof Error && e.name === "AbortError") return;
       setPosts([]);
     } finally {
       setLoading(false);
@@ -70,7 +69,9 @@ export function MapView({
   }, [viewport, filters.sport, filters.timeWindow, filters.needsPlayersOnly]);
 
   useEffect(() => {
-    fetchPosts();
+    const controller = new AbortController();
+    fetchPosts(controller.signal);
+    return () => controller.abort();
   }, [fetchPosts]);
 
   useEffect(() => {

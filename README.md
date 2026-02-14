@@ -22,7 +22,6 @@ A production-quality web app for discovering and creating pickup sports games on
 | Feature | Description |
 |--------|-------------|
 | **Google OAuth** | Sign in with a Google account. |
-| **Dev Login** | When `AUTH_DEV_BYPASS=true`, a "Dev Login" button appears and logs you in as `DEV_USER_EMAIL` without Google. Disabled in production. |
 | **Session** | JWT-based sessions. Sign out via the profile dropdown. |
 
 ---
